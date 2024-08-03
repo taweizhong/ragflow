@@ -240,3 +240,8 @@ def list_app():
         return get_json_result(data=res)
     except Exception as e:
         return server_error_response(e)
+@manager.route('/add_model', methods=['POST'])
+@login_required
+@validate_request("llm_factory", "llm_name", "model_type")
+def add_model():
+    req = request.json
