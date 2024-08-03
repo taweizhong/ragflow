@@ -59,6 +59,7 @@ if __name__ == '__main__':
     )
 
     # init db
+    # 初始化数据
     init_web_db()
     init_web_data()
     # init runtime config
@@ -74,7 +75,7 @@ if __name__ == '__main__':
     RuntimeConfig.DEBUG = args.debug
     if RuntimeConfig.DEBUG:
         stat_logger.info("run on debug mode")
-
+    # 初始化环境
     RuntimeConfig.init_env()
     RuntimeConfig.init_config(JOB_SERVER_HOST=HOST, HTTP_PORT=HTTP_PORT)
 

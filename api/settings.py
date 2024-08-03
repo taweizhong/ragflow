@@ -137,7 +137,7 @@ PARSERS = LLM.get(
 DEPENDENT_DISTRIBUTION = get_base_config("dependent_distribution", False)
 RAG_FLOW_UPDATE_CHECK = False
 
-HOST = get_base_config(RAG_FLOW_SERVICE_NAME, {}).get("host", "127.0.0.1")
+HOST = get_base_config(RAG_FLOW_SERVICE_NAME, {}).get("host", "0.0.0.0")
 HTTP_PORT = get_base_config(RAG_FLOW_SERVICE_NAME, {}).get("http_port")
 
 SECRET_KEY = get_base_config(

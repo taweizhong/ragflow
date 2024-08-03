@@ -33,16 +33,16 @@ from api.settings import SECRET_KEY, stat_logger
 from api.settings import API_VERSION, access_logger
 from api.utils.api_utils import server_error_response
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
-
+# 导出
 __all__ = ['app']
 
-
+# 将 Flask 应用的访问日志处理器添加到名为 'flask.app' 的日志记录器中
 logger = logging.getLogger('flask.app')
 for h in access_logger.handlers:
     logger.addHandler(h)
 
 Request.json = property(lambda self: self.get_json(force=True, silent=True))
-
+# 创建
 app = Flask(__name__)
 CORS(app, supports_credentials=True,max_age=2592000)
 app.url_map.strict_slashes = False
@@ -51,7 +51,7 @@ app.errorhandler(Exception)(server_error_response)
 
 
 ## convince for dev and debug
-#app.config["LOGIN_DISABLED"] = True
+# app.config["LOGIN_DISABLED"] = True
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get("MAX_CONTENT_LENGTH", 128 * 1024 * 1024))
