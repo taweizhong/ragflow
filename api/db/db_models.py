@@ -35,7 +35,7 @@ from api import utils
 
 LOGGER = getLogger()
 
-
+# 单例模式
 def singleton(cls, *args, **kw):
     instances = {}
 
@@ -57,11 +57,11 @@ AUTO_DATE_TIMESTAMP_FIELD_PREFIX = {
     "read_access",
     "write_access"}
 
-
+# 长文本字段
 class LongTextField(TextField):
     field_type = 'LONGTEXT'
 
-
+# JSON字段
 class JSONField(LongTextField):
     default_value = {}
 
@@ -81,7 +81,7 @@ class JSONField(LongTextField):
         return utils.json_loads(
             value, object_hook=self._object_hook, object_pairs_hook=self._object_pairs_hook)
 
-
+# 列表字段
 class ListField(JSONField):
     default_value = []
 
@@ -142,7 +142,7 @@ def auto_date_timestamp_db_field():
 def remove_field_name_prefix(field_name):
     return field_name[2:] if field_name.startswith('f_') else field_name
 
-
+# 基础模型
 class BaseModel(Model):
     create_time = BigIntegerField(null=True)
     create_date = DateTimeField(null=True)
@@ -234,7 +234,7 @@ class BaseModel(Model):
     def insert(cls, __data=None, **insert):
         if isinstance(__data, dict) and __data:
             __data[cls._meta.combined["create_time"]
-                   ] = utils.current_timestamp()
+            ] = utils.current_timestamp()
         if insert:
             insert["create_time"] = utils.current_timestamp()
 
@@ -248,7 +248,7 @@ class BaseModel(Model):
             return {}
 
         normalized[cls._meta.combined["update_time"]
-                   ] = utils.current_timestamp()
+        ] = utils.current_timestamp()
 
         for f_n in AUTO_DATE_TIMESTAMP_FIELD_PREFIX:
             if {f"{f_n}_time", f"{f_n}_date"}.issubset(cls._meta.combined.keys()) and \
@@ -266,7 +266,7 @@ class JsonSerializedField(SerializedField):
         super(JsonSerializedField, self).__init__(serialized_type=SerializedType.JSON, object_hook=object_hook,
                                                   object_pairs_hook=object_pairs_hook, **kwargs)
 
-
+# 数据库连接
 @singleton
 class BaseDataBase:
     def __init__(self):
@@ -324,8 +324,9 @@ class DatabaseLock:
 
         return magic
 
-
+# 数据库连接实例
 DB = BaseDataBase().database_connection
+# 确保在多线程或多进程环境中对数据库的访问是安全的，防止数据竞争和不一致性
 DB.lock = DatabaseLock
 
 
@@ -341,7 +342,7 @@ class DataBaseModel(BaseModel):
     class Meta:
         database = DB
 
-
+# 创建表
 @DB.connection_context()
 def init_database_tables(alter_fields=[]):
     members = inspect.getmembers(sys.modules[__name__], inspect.isclass)
@@ -360,6 +361,7 @@ def init_database_tables(alter_fields=[]):
     if create_failed_list:
         LOGGER.info(f"create tables failed: {create_failed_list}")
         raise Exception(f"create tables failed: {create_failed_list}")
+    # 迁移数据库
     migrate_db()
 
 
@@ -488,6 +490,7 @@ class InvitationCode(DataBaseModel):
         db_table = "invitation_code"
 
 
+# llm factory表结构
 class LLMFactories(DataBaseModel):
     name = CharField(
         max_length=128,
@@ -769,8 +772,9 @@ class Dialog(DataBaseModel):
         null=False,
         default="simple",
         help_text="simple|advanced")
-    prompt_config = JSONField(null=False, default={"system": "", "prologue": "您好，我是您的助手小樱，长得可爱又善良，can I help you?",
-                                                   "parameters": [], "empty_response": "Sorry! 知识库中未找到相关内容！"})
+    prompt_config = JSONField(null=False,
+                              default={"system": "", "prologue": "您好，我是您的助手小樱，长得可爱又善良，can I help you?",
+                                       "parameters": [], "empty_response": "Sorry! 知识库中未找到相关内容！"})
 
     similarity_threshold = FloatField(default=0.2)
     vector_similarity_weight = FloatField(default=0.3)
@@ -859,29 +863,33 @@ class CanvasTemplate(DataBaseModel):
 
 
 def migrate_db():
-        with DB.transaction():
-            migrator = MySQLMigrator(DB)
-            try:
-                migrate(
-                    migrator.add_column('file', 'source_type', CharField(max_length=128, null=False, default="", help_text="where dose this document come from"))
-                )
-            except Exception as e:
-                pass
-            try:
-                migrate(
-                    migrator.add_column('tenant', 'rerank_id', CharField(max_length=128, null=False, default="BAAI/bge-reranker-v2-m3", help_text="default rerank model ID"))
-                )
-            except Exception as e:
-                pass
-            try:
-                migrate(
-                    migrator.add_column('dialog', 'rerank_id', CharField(max_length=128, null=False, default="", help_text="default rerank model ID"))
-                )
-            except Exception as e:
-                pass
-            try:
-                migrate(
-                    migrator.add_column('dialog', 'top_k', IntegerField(default=1024))
-                )
-            except Exception as e:
-                pass
+    with DB.transaction():
+        migrator = MySQLMigrator(DB)
+        try:
+            migrate(
+                migrator.add_column('file', 'source_type', CharField(max_length=128, null=False, default="",
+                                                                     help_text="where dose this document come from"))
+            )
+        except Exception as e:
+            pass
+        try:
+            migrate(
+                migrator.add_column('tenant', 'rerank_id',
+                                    CharField(max_length=128, null=False, default="BAAI/bge-reranker-v2-m3",
+                                              help_text="default rerank model ID"))
+            )
+        except Exception as e:
+            pass
+        try:
+            migrate(
+                migrator.add_column('dialog', 'rerank_id', CharField(max_length=128, null=False, default="",
+                                                                     help_text="default rerank model ID"))
+            )
+        except Exception as e:
+            pass
+        try:
+            migrate(
+                migrator.add_column('dialog', 'top_k', IntegerField(default=1024))
+            )
+        except Exception as e:
+            pass

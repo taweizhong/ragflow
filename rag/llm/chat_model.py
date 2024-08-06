@@ -13,6 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import time
+
 from openai.lib.azure import AzureOpenAI
 from zhipuai import ZhipuAI
 from dashscope import Generation
@@ -23,7 +25,8 @@ from ollama import Client
 from volcengine.maas.v2 import MaasService
 from rag.nlp import is_english
 from rag.utils import num_tokens_from_string
-
+from zdwwai import ZdwwAI
+import json
 
 class Base(ABC):
     def __init__(self, key, model_name, base_url):
@@ -621,3 +624,49 @@ class BedrockChat(Base):
             yield ans + f"ERROR: Can't invoke '{self.model_name}'. Reason: {e}"
 
         yield num_tokens_from_string(ans)
+
+class ZDWW(Base):
+    def __init__(self, key, model_name="MaasTN-chatglm3-6b", **kwargs):
+        self.model_name = model_name
+        self.client = ZdwwAI(key)
+
+    def chat(self, system, history, gen_conf):
+        if system:
+            history.insert(0, {"role": "system", "content": system})
+        try:
+            rep = self.client.call(history)
+            ans = rep['choices'][0]['message']['content'].strip()
+            if rep['choices'][0]['finish_reason'] == "length":
+                ans += "...\nFor the content length reason, it stopped, continue?" if is_english(
+                    [ans]) else "······\n由于长度的原因，回答被截断了，要继续吗？"
+            return ans, num_tokens_from_string(ans)
+        except Exception as e:
+            return "**ERROR**: " + str(e), 0
+
+    def chat_streamly(self, system, history, gen_conf):
+        if system:
+            history.insert(0, {"role": "system", "content": system})
+        if "presence_penalty" in gen_conf: del gen_conf["presence_penalty"]
+        if "frequency_penalty" in gen_conf: del gen_conf["frequency_penalty"]
+        ans = ""
+        tk_count = 0
+        try:
+            dialogue_stream = self.client.stream(messages=history, stream=True)
+            for resp in dialogue_stream:
+                rep = json.loads(resp)
+                if not rep['choices'][0]['delta'].get('content'):
+                    continue
+                delta = rep['choices'][0]['delta']['content']
+                ans += delta
+                if rep['choices'][0]['finish_reason'] == "length":
+                    ans += "...\nFor the content length reason, it stopped, continue?" if is_english(
+                        [ans]) else "······\n由于长度的原因，回答被截断了，要继续吗？"
+                    tk_count = resp.usage.total_tokens
+                if rep['choices'][0]['finish_reason'] == "stop":
+                    tk_count = resp.usage.total_tokens
+                # time.sleep(0.1)
+                yield ans
+        except Exception as e:
+            yield ans + "\n**ERROR**: " + str(e)
+
+        yield tk_count

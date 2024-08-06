@@ -78,13 +78,13 @@ if __name__ == '__main__':
     # 初始化环境
     RuntimeConfig.init_env()
     RuntimeConfig.init_config(JOB_SERVER_HOST=HOST, HTTP_PORT=HTTP_PORT)
-
+    # 日志设置
     peewee_logger = logging.getLogger('peewee')
     peewee_logger.propagate = False
     # rag_arch.common.log.ROpenHandler
     peewee_logger.addHandler(database_logger.handlers[0])
     peewee_logger.setLevel(database_logger.level)
-
+    # 异步线程
     thr = ThreadPoolExecutor(max_workers=1)
     thr.submit(update_progress)
 
@@ -94,6 +94,7 @@ if __name__ == '__main__':
         werkzeug_logger = logging.getLogger("werkzeug")
         for h in access_logger.handlers:
             werkzeug_logger.addHandler(h)
+        # 启动服务
         run_simple(hostname=HOST, port=HTTP_PORT, application=app, threaded=True, use_reloader=RuntimeConfig.DEBUG, use_debugger=RuntimeConfig.DEBUG)
     except Exception:
         traceback.print_exc()

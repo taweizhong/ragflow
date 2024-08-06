@@ -26,7 +26,7 @@ LoggerFactory.set_directory(
         "api"))
 # {CRITICAL: 50, FATAL:50, ERROR:40, WARNING:30, WARN:30, INFO:20, DEBUG:10, NOTSET:0}
 LoggerFactory.LEVEL = 30
-
+# 日志类别
 stat_logger = getLogger("stat")
 access_logger = getLogger("access")
 database_logger = getLogger("database")

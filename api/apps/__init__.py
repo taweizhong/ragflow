@@ -40,13 +40,18 @@ __all__ = ['app']
 logger = logging.getLogger('flask.app')
 for h in access_logger.handlers:
     logger.addHandler(h)
-
+# 为 Request 对象定义 json 属性
 Request.json = property(lambda self: self.get_json(force=True, silent=True))
-# 创建
+# 创建应用
 app = Flask(__name__)
+app.debug = True  # 启用调试模式
+# 跨域
 CORS(app, supports_credentials=True,max_age=2592000)
+# 忽略URL后的/
 app.url_map.strict_slashes = False
+# 设置自定义JSON编码器
 app.json_encoder = CustomJSONEncoder
+# 捕获错误
 app.errorhandler(Exception)(server_error_response)
 
 
@@ -55,9 +60,11 @@ app.errorhandler(Exception)(server_error_response)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get("MAX_CONTENT_LENGTH", 128 * 1024 * 1024))
-
+# 用于在服务器端管理会话数据
 Session(app)
+# 用于管理用户的登录状态和会话
 login_manager = LoginManager()
+# 集成登录管理功能
 login_manager.init_app(app)
 
 
@@ -68,7 +75,7 @@ def search_pages_path(pages_dir):
     app_path_list.extend(api_path_list)
     return app_path_list
 
-
+# 设置路由分组
 def register_page(page_path):
     path = f'{page_path}'
 

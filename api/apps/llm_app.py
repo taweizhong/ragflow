@@ -35,14 +35,17 @@ def factories():
 
 @manager.route('/set_api_key', methods=['POST'])
 @login_required
-@validate_request("llm_factory", "api_key")
+# @validate_request("llm_factory", "api_key")
 def set_api_key():
     req = request.json
     # test if api key works
     chat_passed, embd_passed, rerank_passed = False, False, False
+    # 厂家名字
     factory = req["llm_factory"]
     msg = ""
+    # 查询所有的厂家
     for llm in LLMService.query(fid=factory):
+        # 词嵌入向量
         if not embd_passed and llm.model_type == LLMType.EMBEDDING.value:
             mdl = EmbeddingModel[factory](
                 req["api_key"], llm.llm_name, base_url=req.get("base_url"))
@@ -53,7 +56,11 @@ def set_api_key():
                 embd_passed = True
             except Exception as e:
                 msg += f"\nFail to access embedding model({llm.llm_name}) using this api key." + str(e)
+        # 对话模型
         elif not chat_passed and llm.model_type == LLMType.CHAT.value:
+            # api地址
+            url = req.get("base_url")
+            # 创建模型对象
             mdl = ChatModel[factory](
                 req["api_key"], llm.llm_name, base_url=req.get("base_url"))
             try:
@@ -79,7 +86,7 @@ def set_api_key():
 
     if msg:
         return get_data_error_result(retmsg=msg)
-
+    # 构建llm
     llm = {
         "api_key": req["api_key"],
         "api_base": req.get("base_url", "")
@@ -240,8 +247,43 @@ def list_app():
         return get_json_result(data=res)
     except Exception as e:
         return server_error_response(e)
-@manager.route('/add_model', methods=['POST'])
+@manager.route('/add_ww_llm', methods=['POST'])
 @login_required
-@validate_request("llm_factory", "llm_name", "model_type")
-def add_model():
+# @validate_request("fid", "llm_name", "tags", "max_tokens", "model_type")
+def add_ww_llm():
     req = request.json
+    fid = req["fid"]
+    llm_name = req["llm_name"]
+    tags = req.get("tags")
+    max_tokens = req.get("max_tokens")
+    model_type = req.get("model_type")
+
+    info = {
+        "fid": fid,
+        "llm_name": llm_name,
+        "tags": tags,
+        "max_tokens": max_tokens,
+        "model_type": model_type
+    }
+    try:
+        LLMService.save(**info)
+        return get_json_result(data="ok")
+    except Exception as e:
+        pass
+
+@manager.route('/add_ww_llm_factory', methods=['POST'])
+@login_required
+# @validate_request("name", "logo", "tags", "status")
+def add_ww_llm_factory():
+    req = request.json
+    info = {
+        "name": req.get("name"),
+        "logo": req.get("logo"),
+        "tags": req.get("tags"),
+        "status": req.get("status"),
+    }
+    try:
+        LLMFactoriesService.save(**info)
+        return get_json_result(data="ok")
+    except Exception as e:
+        pass
